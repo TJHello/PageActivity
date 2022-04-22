@@ -1,11 +1,11 @@
 package com.tjhello.demo.page
 
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
+import android.content.Intent
+import com.tjhello.page.PageController
+import com.tjhello.page.PageDocker
 
-class MainActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+class MainActivity : PageDocker() {
+    override fun onCreate() {
+        PageController.startPageActivity(this,Intent(this,LauncherPageActivity::class.java))
     }
 }
