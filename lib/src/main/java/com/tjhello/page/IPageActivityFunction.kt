@@ -20,6 +20,9 @@ interface IPageActivityFunction {
         grantResults:IntArray
     )
 
+    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
+
     fun onBackPressed()
+
 
 }

@@ -20,22 +20,7 @@ object PageController {
         context.startActivity(intent)
     }
 
-    fun startPageActivity(pageDocker: PageDocker,intent: Intent){
-        val component = intent.component
-        if(component!=null){
-            val className = component.className
-            val clazz = Class.forName(className)
-            if(PageActivity::class.java.isAssignableFrom(clazz)){
-                val constructor = clazz.getConstructor(Context::class.java)
-                val pageActivity = constructor.newInstance(pageDocker) as PageActivity
-                pageDocker.startPageActivity(pageActivity,intent)
-            }
-        }
-    }
 
-    fun finishPageActivity(pageDocker: PageDocker,pageActivity: PageActivity){
-        pageDocker.finishPageActivity(pageActivity)
-    }
 
     internal fun bindDocker(pageDocker: PageDocker){
         if(!mPageDockerList.contains(pageDocker)){

@@ -1,7 +1,13 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'maven-publish'
 }
+
+ext.verName = "0.1.1-t02"
+ext.verCode = 1
+ext.POM_ARTIFACT_ID = 'PageActivity'
+ext.uploadToOnline = true
 
 android {
     compileSdk 32
@@ -37,4 +43,40 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+task sourcesJar(type: Jar) {
+    getArchiveClassifier().set('sources')
+    from android.sourceSets.main.java.source
+}
+
+afterEvaluate{
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = "com.TJHello"
+                artifactId = POM_ARTIFACT_ID
+                version = verName
+                artifact sourcesJar
+            }
+        }
+        repositories {
+            maven {
+                if (!uploadToOnline) {
+                    url = uri('/Users/TJHello/TJRepository/')
+                } else {
+                    url = ONLINE_REPO_URL
+                    credentials {
+                        username ONLINE_REPO_USERNAME
+                        password ONLINE_REPO_PASSWORD
+                    }
+                }
+            }
+        }
+    }
 }
