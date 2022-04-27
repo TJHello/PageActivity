@@ -93,6 +93,11 @@ open class PageActivity(context: Context) : FrameLayout(context),IPageActivityLi
         mPageDocker.startPageActivity(this,intent)
     }
 
+    override fun startActivity(clazz: Class<out PageActivity>) {
+        val intent = Intent(context,clazz)
+        startActivity(intent)
+    }
+
     override fun finish() {
         mPageDocker.finishPageActivity(this)
     }
@@ -108,6 +113,11 @@ open class PageActivity(context: Context) : FrameLayout(context),IPageActivityLi
 
     override fun startActivityForResult(intent: Intent, requestCode: Int) {
         mPageDocker.startPageActivity(this,intent,requestCode)
+    }
+
+    override fun startActivityForResult(clazz: Class<out PageActivity>, requestCode: Int) {
+        val intent = Intent(context,clazz)
+        startActivityForResult(intent,requestCode)
     }
 
     override fun setResult(resultCode: Int, intent: Intent?) {
@@ -129,6 +139,10 @@ open class PageActivity(context: Context) : FrameLayout(context),IPageActivityLi
 
     override fun getColor(id: Int): Int {
         return context.resources.getColor(id)
+    }
+
+    override fun overridePendingTransition(enterAnim: Int, exitAnim: Int) {
+
     }
 
     override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {

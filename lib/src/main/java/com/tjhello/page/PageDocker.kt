@@ -9,11 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 
 abstract class PageDocker : AppCompatActivity() {
 
-    /**
-     * 一切之始
-     */
-    abstract fun onCreate()
-
     abstract fun onGetHomePage():Class<out PageActivity>
 
     private lateinit var mDockerLayout : FrameLayout
@@ -22,7 +17,6 @@ abstract class PageDocker : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         PageController.bindDocker(this)
         injectRootLayout()
-        onCreate()
         startPageActivity(null,Intent(this,onGetHomePage()))
     }
 
