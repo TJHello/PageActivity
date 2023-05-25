@@ -1,24 +1,30 @@
 package com.tjhello.page
 
+import android.content.Intent
 import android.os.Bundle
 
 interface IPageActivityLifecycle {
 
-    fun onCreate(savedInstanceState:Bundle?)
+    fun performCreate(savedInstanceState: Bundle?)
 
-    fun onResume()
+    fun performNewIntent(intent: Intent)
 
-    fun onPause()
+    fun performStart()
 
-    fun onDestroy()
+    fun performRestart()
 
-    fun onStart()
+    fun performResume()
 
-    fun onStop()
+    fun performPause()
 
-    fun onPostCreate()
+    fun performUserLeaving()
 
-    fun onPostResume()
+    fun performStop()
 
+    fun performDestroy()
+
+    fun dispatchActivityResult(requestCode:Int, resultCode:Int,data:Intent?)
+
+    fun dispatchRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray)
 
 }

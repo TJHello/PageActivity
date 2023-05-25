@@ -7,6 +7,7 @@ import androidx.annotation.AnimRes
 import androidx.annotation.ColorRes
 import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 
 interface IPageActivityMethod {
 
@@ -34,9 +35,20 @@ interface IPageActivityMethod {
 
     fun getDocker():PageDocker
 
-    fun getString(@StringRes id:Int):String
+    fun getActivity():AppCompatActivity
 
-    fun getColor(@ColorRes id:Int):Int
+    fun getString(@StringRes resId:Int):String
+
+    fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
+
+    fun getColor(@ColorRes resId:Int):Int
+
+    fun getResources():Resources
 
     fun overridePendingTransition(@AnimRes enterAnim: Int,@AnimRes exitAnim: Int)
+
+    fun isFinishing():Boolean
+
+    fun runOnUiThread(runnable: Runnable)
+
 }

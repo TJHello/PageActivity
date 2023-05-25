@@ -14,6 +14,7 @@ class Test1PageActivity(context: Context) : PageActivity(context) {
         setContentView(R.layout.test_page_activity_layout)
 
         this.findViewById<Button>(R.id.btBack).setOnClickListener {
+            this.setResult(RESULT_OK,null)
             this.finish()
         }
         this.findViewById<TextView>(R.id.tvTitle).text = getIntent().getStringExtra("title")

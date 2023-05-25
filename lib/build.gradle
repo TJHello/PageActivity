@@ -4,17 +4,17 @@ plugins {
     id 'maven-publish'
 }
 
-ext.verName = "0.1.1-t04"
+ext.verName = "0.1.1-t11"
 ext.verCode = 1
-ext.POM_ARTIFACT_ID = 'PageActivity'
+ext.POM_ARTIFACT_ID = 'page_activity'
 ext.uploadToOnline = true
 
 android {
-    compileSdk 32
+    compileSdk 30
 
     defaultConfig {
-        minSdk 21
-        targetSdk 32
+        minSdk 19
+        targetSdk 30
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -59,7 +59,7 @@ afterEvaluate{
         publications {
             release(MavenPublication) {
                 from components.release
-                groupId = "com.TJHello"
+                groupId = "com.eyewind.view"
                 artifactId = POM_ARTIFACT_ID
                 version = verName
                 artifact sourcesJar

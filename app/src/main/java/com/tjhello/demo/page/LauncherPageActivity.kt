@@ -17,9 +17,12 @@ class LauncherPageActivity(context: Context) : PageActivity(context) {
         this.findViewById<Button>(R.id.btNext).setOnClickListener {
             val intent = Intent(context,Test1PageActivity::class.java)
             intent.putExtra("title","标题${++num}")
-            startActivity(intent)
+            startActivityForResult(intent,1)
         }
+    }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
     }
 
