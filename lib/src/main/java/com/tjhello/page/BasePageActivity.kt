@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.appcompat.app.AppCompatActivity
+import com.eyewind.lib.log.EyewindLog
 
 open class BasePageActivity(private val context:Context) : FrameLayout(context),IPageActivityLifecycle,IPageActivityMethod {
 
@@ -19,6 +20,8 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         const val RESULT_OK = -1
         const val RESULT_FIRST_USER = 1
         const val RESULT_CANCELED = 0
+        const val SAVED_KEY_SUPPER_DATA = "__super_data"
+        private const val TAG = "BasePageActivity"
     }
 
     private val mPageDocker = context as PageDocker
@@ -29,127 +32,186 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     private var mResultIntent : Intent ?= null
     private var mIsFinish = false
 
-    @CallSuper
-    protected open fun onCreate(savedInstanceState:Bundle?){}
 
     @CallSuper
-    protected open fun onResume(){}
+    protected open fun onCreate(savedInstanceState:Bundle?){
+        log("[onCreate]")
+    }
 
     @CallSuper
-    protected open fun onPause(){}
+    protected open fun onResume(){
+        log("[onResume]")
+    }
 
     @CallSuper
-    protected open fun onDestroy(){}
+    protected open fun onPause(){
+        log("[onPause]")
+    }
 
     @CallSuper
-    protected open fun onStart(){}
+    protected open fun onDestroy(){
+        log("[onDestroy]")
+    }
 
     @CallSuper
-    protected open fun onStop(){}
+    protected open fun onStart(){
+        log("[onStart]")
+    }
 
     @CallSuper
-    open fun onPostCreate(savedInstanceState:Bundle?){}
+    protected open fun onStop(){
+        log("[onStop]")
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        log("[onWindowFocusChanged]$hasWindowFocus")
+    }
 
     @CallSuper
-    open fun onPostResume(){}
+    open fun onPostCreate(savedInstanceState:Bundle?){
+//        log("[onPostCreate]")
+    }
+
+    @CallSuper
+    open fun onPostResume(){
+//        log("[onPostResume]")
+    }
 
     //长按Home键或者点击Home键的时候触发
     @CallSuper
-    protected open fun onUserLeaveHint(){}
+    protected open fun onUserLeaveHint(){
+        log("[onUserLeaveHint]")
+    }
 
     //内存状态回调
     @CallSuper
     open fun onTrimMemory(level:Int){
-
+        log("[onTrimMemory]level:$level")
     }
 
     //二次启动Activity的时候
     @CallSuper
-    protected open fun onNewIntent(intent: Intent){}
+    protected open fun onNewIntent(intent: Intent){
+        log("[onNewIntent]")
+    }
 
     @CallSuper
     protected open fun onRequestPermissionsResult(
         requestCode:Int,
         permissions:Array<out String>,
         grantResults:IntArray
-    ){}
+    ){
+        log("[onRequestPermissionsResult]")
+    }
 
     @CallSuper
-    protected open fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?){}
+    protected open fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?){
+        log("[onActivityResult]requestCode=$requestCode,resultCode=$resultCode,data=$data")
+    }
 
     protected open fun onSaveInstanceState(outState:Bundle){
-
+        log("[onSaveInstanceState]")
     }
 
     protected open fun onRestoreInstanceState(savedInstanceState:Bundle){
-
+        log("[onRestoreInstanceState]")
     }
 
-    override fun onSaveInstanceState(): Parcelable? {
+    final override fun onSaveInstanceState(): Parcelable {
         val bundle = Bundle()
         val parcelable = super.onSaveInstanceState()
         onSaveInstanceState(bundle)
-        bundle.putParcelable("__super_data",parcelable)
+        if(parcelable!=null){
+            bundle.putParcelable(SAVED_KEY_SUPPER_DATA,parcelable)
+        }
+        getDocker().savePageActivity(this,bundle)
         return bundle
     }
 
-    override fun onRestoreInstanceState(state: Parcelable?) {
+    final override fun onRestoreInstanceState(state: Parcelable?) {
+        log("[onRestoreInstanceState]")
         if(state==null) return
         val bundle = state as Bundle
-        val superData = bundle.getParcelable<Parcelable>("__super_data")
+        val superData = bundle.getParcelable<Parcelable>(SAVED_KEY_SUPPER_DATA)
         super.onRestoreInstanceState(superData)
         onRestoreInstanceState(bundle)
     }
 
     open fun onBackPressed(){
+        log("[onBackPressed]")
         finish()
     }
 
 
-    override fun performCreate(savedInstanceState:Bundle?) {
-        onCreate(savedInstanceState)
-        onPostCreate(savedInstanceState)
+    override fun performCreate(savedInstanceState:Parcelable?) {
+//        log("[performCreate]")
+        if(savedInstanceState!=null&&savedInstanceState is Bundle){
+            onCreate(savedInstanceState)
+            onPostCreate(savedInstanceState)
+        }else {
+            onCreate(null)
+            onPostCreate(null)
+        }
     }
 
     override fun performNewIntent(intent: Intent) {
+//        log("[performNewIntent]")
         onNewIntent(intent)
     }
 
     override fun performStart() {
+//        log("[performStart]")
         onStart()
     }
 
     override fun performRestart() {
+//        log("[performRestart]")
         performStart()
     }
 
     override fun performResume() {
+//        log("[performResume]")
         onResume()
         onPostResume()
     }
 
     override fun performPause() {
+//        log("[performPause]")
         onPause()
     }
 
     override fun performUserLeaving() {
+//        log("[performUserLeaving]")
         onUserLeaveHint()
     }
 
     override fun performStop() {
+//        log("[performStop]")
         onStop()
     }
 
     override fun performDestroy() {
+        log("[performDestroy]")
         onDestroy()
     }
 
     override fun dispatchActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        log("[dispatchActivityResult]")
         onActivityResult(requestCode, resultCode, data)
     }
 
     override fun dispatchRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        log("[dispatchdispatchRequestPermissionsResultActivityResult]")
         onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    override fun dispatchSaveInstanceState(): Parcelable? {
+        return onSaveInstanceState()
+    }
+
+    override fun dispatchRestoreInstanceState(state: Parcelable?) {
+        return onRestoreInstanceState(state)
     }
 
     override fun setIntent(intent: Intent) {
@@ -233,17 +295,6 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         return mIsFinish
     }
 
-    override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
-        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
-        if(gainFocus){
-            onResume()
-            onPostResume()
-        }else{
-            onPause()
-        }
-        onWindowFocusChanged(gainFocus)
-    }
-
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         onDestroy()
@@ -276,6 +327,10 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
 
     override fun runOnUiThread(runnable: Runnable) {
         mPageDocker.runOnUiThread(runnable)
+    }
+
+    private fun log(msg:String){
+        EyewindLog.logLibInfo(this::class.java.simpleName,msg)
     }
 
 }

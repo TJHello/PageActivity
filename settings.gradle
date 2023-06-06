@@ -13,6 +13,13 @@ dependencyResolutionManagement {
         maven{ url 'https://maven.aliyun.com/repository/public'}
         maven{ url 'https://maven.aliyun.com/repository/google'}
         maven{ url 'https://maven.aliyun.com/repository/central'}
+        maven {
+            credentials {
+                username '5fa3980bcd2214ba0ea90846'
+                password '06MnA53Z)lyo'
+            }
+            url 'https://packages.aliyun.com/maven/repository/2046286-release-wbmgVx'
+        }
         google()
         mavenCentral()
     }

@@ -21,5 +21,4 @@ open class PageActivity(context: Context) : BasePageActivity(context) {
     }
 
 
-
 }

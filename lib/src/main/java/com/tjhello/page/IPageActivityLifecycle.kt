@@ -2,10 +2,11 @@ package com.tjhello.page
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Parcelable
 
 interface IPageActivityLifecycle {
 
-    fun performCreate(savedInstanceState: Bundle?)
+    fun performCreate(savedInstanceState: Parcelable?)
 
     fun performNewIntent(intent: Intent)
 
@@ -27,4 +28,7 @@ interface IPageActivityLifecycle {
 
     fun dispatchRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray)
 
+    fun dispatchSaveInstanceState(): Parcelable?
+
+    fun dispatchRestoreInstanceState(state: Parcelable?)
 }

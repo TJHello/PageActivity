@@ -7,18 +7,44 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.contains
+import com.eyewind.lib.log.EyewindLog
+import com.tjhello.page.info.PageHead
+import java.util.Stack
 
 abstract class PageDocker : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "PageDocker"
+    }
+
+    private var isStartIng = false//Docker启动中
 
     abstract fun onGetHomePage():Class<out BasePageActivity>
 
     private lateinit var mDockerLayout : FrameLayout
+    private val pageHeadStack = Stack<PageHead>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isStartIng = true
         PageController.bindDocker(this)
         injectRootLayout()
         startPageActivity(null,Intent(this,onGetHomePage()))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if(!isStartIng){
+            getTopPageActivity()?.activity?.performPause()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if(!isStartIng){
+            getTopPageActivity()?.activity?.performResume()
+        }
     }
 
     override fun onDestroy() {
@@ -26,15 +52,23 @@ abstract class PageDocker : AppCompatActivity() {
         PageController.unBindDocker(this)
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        if(hasFocus){
+            isStartIng = false
+        }
+        super.onWindowFocusChanged(hasFocus)
+//        getTopPageActivity()?.activity?.onWindowFocusChanged(hasFocus)
+    }
+
     override fun onBackPressed() {
         val pageActivity = getTopPageActivity()
-        pageActivity?.onBackPressed()?:super.onBackPressed()
+        pageActivity?.activity?.onBackPressed()?:super.onBackPressed()
     }
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         val pageActivity = getTopPageActivity()
-        pageActivity?.performUserLeaving()
+        pageActivity?.activity?.performUserLeaving()
     }
 
     override fun onTrimMemory(level: Int) {
@@ -42,6 +76,7 @@ abstract class PageDocker : AppCompatActivity() {
         foreachPageActivity{
             it.onTrimMemory(level)
         }
+        releaseSomePages()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -64,25 +99,34 @@ abstract class PageDocker : AppCompatActivity() {
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT))
     }
 
-    private fun getTopPageActivity():BasePageActivity?{
-        return if(mDockerLayout.childCount>0){
-            mDockerLayout.getChildAt(mDockerLayout.childCount-1) as BasePageActivity
+    private fun getTopPageActivity():PageHead?{
+        return if(pageHeadStack.isNotEmpty()){
+            pageHeadStack.peek()
         }else{
             null
         }
     }
 
     private fun getPageActivity(clazz: Class<*>):BasePageActivity?{
-        return findPageActivity{
+        val index = findPageActivity{
             it::class.java.name==clazz.name
+        } ?: return null
+        val count = mDockerLayout.childCount
+        for(i in count-1 downTo 0){
+            val view = mDockerLayout.getChildAt(i)
+            if(view is PageActivity){
+                if(view.id == index.id){
+                    return view
+                }
+            }
         }
+        return newPageActivity(index)
     }
 
-    private fun findPageActivity(function:(BasePageActivity)->Boolean):BasePageActivity?{
-        for (i in  mDockerLayout.childCount-1 downTo 0){
-            val pageActivity = mDockerLayout.getChildAt(i) as BasePageActivity
-            if(function(pageActivity)){
-                return pageActivity
+    private fun findPageActivity(function:(PageHead)->Boolean):PageHead?{
+        for (pageIndex in pageHeadStack) {
+            if(function(pageIndex)){
+                return pageIndex
             }
         }
         return null
@@ -104,14 +148,16 @@ abstract class PageDocker : AppCompatActivity() {
                 when(intent.flags){
                     //单例模式
                     Intent.FLAG_ACTIVITY_NEW_TASK->{
-                        val pageActivity = this.getPageActivity(clazz)
-                        if(pageActivity!=null&&pageActivity::class.java.name==className){
-                            onStartNewIntent(pageFrom,pageActivity,intent,requestCode)
+                        val pageActivityIndex = this.getTopPageActivity()
+                        if(pageActivityIndex!=null&&pageActivityIndex.clazz.name==className){
+                            //重启动，这个activity本来就在最前面了，不用做任何操作
+                            onStartNewIntent(pageFrom,pageActivityIndex,intent,requestCode)
                         }else{
+                            //新启动
                             val constructor = clazz.getConstructor(Context::class.java)
                             val page = constructor.newInstance(this) as BasePageActivity
                             page.id = View.generateViewId()
-                            this.onStartPageActivity(pageFrom,page,intent,requestCode)
+                            this.onStartPageActivity(pageFrom,PageHead(page),intent,requestCode)
                         }
                     }
                     //断背模式
@@ -120,49 +166,49 @@ abstract class PageDocker : AppCompatActivity() {
                         if(pageActivity!=null&&pageActivity::class.java.name==className){
                             for (i in  mDockerLayout.childCount-1 downTo 0){
                                 val page = mDockerLayout.getChildAt(i) as BasePageActivity
-                                if(page==pageActivity){
-                                    finishPageActivity(page)
+                                if(page.id==pageActivity.id){
+                                    finishPageActivity(page)//结束掉自己,此处如果是单例模式可以不移除自己
                                     break
                                 }
                                 finishPageActivity(page)
                             }
-                            onStartNewIntent(pageFrom,pageActivity,intent,requestCode)
-                        }else{
-                            val constructor = clazz.getConstructor(Context::class.java)
-                            val page = constructor.newInstance(this) as BasePageActivity
-                            page.id = View.generateViewId()
-                            onStartPageActivity(pageFrom,page,intent,requestCode)
                         }
+                        val constructor = clazz.getConstructor(Context::class.java)
+                        val page = constructor.newInstance(this) as BasePageActivity
+                        page.id = View.generateViewId()
+                        onStartPageActivity(pageFrom,PageHead(page),intent,requestCode)
                     }
                     //断背+复用模式
                     Intent.FLAG_ACTIVITY_CLEAR_TOP and Intent.FLAG_ACTIVITY_SINGLE_TOP->{
-                        val pageActivity = this.getPageActivity(clazz)
-                        if(pageActivity!=null&&pageActivity::class.java.name==className){
+                        val pageActivityIndex = this.findPageActivity {
+                            it.clazz.name == clazz.name
+                        }
+                        if(pageActivityIndex!=null&&pageActivityIndex::class.java.name==className){
                             for (i in  mDockerLayout.childCount-1 downTo 0){
                                 val page = mDockerLayout.getChildAt(i) as BasePageActivity
-                                if(page==pageActivity){
+                                if(page.id==pageActivityIndex.id){
                                     break
                                 }
                                 finishPageActivity(page)
                             }
-                            onStartNewIntent(pageFrom,pageActivity, intent,requestCode)
+                            onStartNewIntent(pageFrom,pageActivityIndex, intent,requestCode)
                         }else{
                             val constructor = clazz.getConstructor(Context::class.java)
                             val page = constructor.newInstance(this) as BasePageActivity
                             page.id = View.generateViewId()
-                            onStartPageActivity(pageFrom,page,intent,requestCode)
+                            onStartPageActivity(pageFrom,PageHead(page),intent,requestCode)
                         }
                     }
                     //栈顶模式
                     0 or Intent.FLAG_ACTIVITY_SINGLE_TOP->{
-                        val pageActivity = getTopPageActivity()
-                        if(pageActivity!=null&&pageActivity::class.java.name==className){
-                            onStartNewIntent(pageFrom,pageActivity,intent,requestCode)
+                        val pageActivityIndex = getTopPageActivity()
+                        if(pageActivityIndex!=null&&pageActivityIndex.clazz.name==className){
+                            onStartNewIntent(pageFrom,pageActivityIndex,intent,requestCode)
                         }else{
                             val constructor = clazz.getConstructor(Context::class.java)
                             val page = constructor.newInstance(this) as BasePageActivity
                             page.id = View.generateViewId()
-                            onStartPageActivity(pageFrom,page,intent,requestCode)
+                            onStartPageActivity(pageFrom,PageHead(page),intent,requestCode)
                         }
                     }
                 }
@@ -170,35 +216,115 @@ abstract class PageDocker : AppCompatActivity() {
         }
     }
 
-    private fun onStartNewIntent(pageFrom: BasePageActivity?, pageActivity: BasePageActivity, intent: Intent, requestCode: Int){
-        pageActivity.setWhereFromKey(pageFrom?.id?:0)
+    private fun newPageActivity(pageHead: PageHead):BasePageActivity{
+        val constructor = pageHead.clazz.getConstructor(Context::class.java)
+        val page = constructor.newInstance(this) as BasePageActivity
+        page.id = pageHead.id
+        return page
+    }
+
+    /**
+     * 保存被回收的PageActivity
+     */
+    internal fun savePageActivity(pageActivity: BasePageActivity,outState:Bundle){
+        synchronized(pageHeadStack){
+            val pageIndex = pageHeadStack.find {
+                it.id == pageActivity.id
+            }
+            if(pageIndex!=null){
+                pageIndex.savedInstanceState = outState
+            }
+        }
+    }
+
+
+    private fun onResumePageActivity(pageFrom: BasePageActivity?, pageActivity: BasePageActivity, intent: Intent, requestCode: Int){
+        log("[onResumePageActivity]")
+        pageActivity.setWhereFromKey(pageFrom?.id?:-1)
         pageActivity.setRequestCode(requestCode)
-        pageActivity.performNewIntent(intent)
+        if(pageFrom!=null&&pageFrom.getRequestCode()>0){
+            pageActivity.dispatchActivityResult(pageFrom.getRequestCode(),pageFrom.getResultCode(),pageFrom.getResultIntent())
+        }
+        pageActivity.performResume()
+        if(hasWindowFocus()){
+            pageActivity.onWindowFocusChanged(true)
+        }
 
     }
 
-    private fun onStartPageActivity(pageFrom:BasePageActivity?,pageActivity: BasePageActivity, intent: Intent,requestCode: Int){
-        pageActivity.setWhereFromKey(pageFrom?.id?:-1)
-        pageActivity.setRequestCode(requestCode)
-        pageActivity.setIntent(intent)
-        pageActivity.performCreate(null)
-        pageActivity.performStart()
-        pageActivity.performResume()
+    private fun onStartNewIntent(pageFrom: BasePageActivity?, pageHead: PageHead, intent: Intent, requestCode: Int){
+        val pageActivity = pageHead.activity
+        if(pageActivity==null){
+            log("[onStartNewIntent]pageActivity==null")
+            //activity被回收，重新启动
+            val activity = newPageActivity(pageHead)
+            pageHead.activity = activity
+            onStartPageActivity(pageFrom,pageHead,intent, requestCode)
+        }else{
+            log("[onStartNewIntent]")
+            pageActivity.setWhereFromKey(pageFrom?.id?:-1)
+            pageActivity.setRequestCode(requestCode)
+            pageActivity.performNewIntent(intent)
+        }
+    }
 
-        mDockerLayout.addView(pageActivity)
+    private fun onStartPageActivity(pageFrom:BasePageActivity?, pageHead: PageHead, intent: Intent, requestCode: Int){
+        log("[onStartPageActivity]")
+        pageFrom?.onWindowFocusChanged(false)
+        pageFrom?.performPause()
+        pageFrom?.performStop()
+
+        val pageActivity = pageHead.activity
+        if(pageActivity!=null){
+            pageActivity.setWhereFromKey(pageFrom?.id?:-1)
+            pageActivity.setRequestCode(requestCode)
+            pageActivity.setIntent(intent)
+            pageActivity.performCreate(pageHead.savedInstanceState)
+            pageActivity.performStart()
+            if(pageHead.savedInstanceState!=null){
+                pageActivity.dispatchRestoreInstanceState(pageHead.savedInstanceState)
+                pageHead.savedInstanceState = null
+            }
+            if(pageFrom!=null&&pageFrom.getRequestCode()>0){
+                pageActivity.dispatchActivityResult(pageFrom.getRequestCode(),pageFrom.getResultCode(),pageFrom.getResultIntent())
+            }
+            pageActivity.performResume()
+            pageHeadStack.push(PageHead(pageActivity))
+            if(mDockerLayout.contains(pageActivity)){
+                mDockerLayout.removeView(pageActivity)
+            }
+            mDockerLayout.addView(pageActivity)
+        }
     }
 
     internal fun finishPageActivity(pageActivity: BasePageActivity){
+        pageActivity.onWindowFocusChanged(false)
         pageActivity.performPause()
         if(pageActivity.getRequestCode()!=0){
             val pageFrom = findPageActivity {
                 it.id==pageActivity.getWhereFromKey()
             }
-            pageFrom?.dispatchActivityResult(pageActivity.getRequestCode(),pageActivity.getResultCode(),pageActivity.getResultIntent())
+            //finish之后启动上一个activity
+            //这里activity有可能被销毁了，所以先创建一个
+            if(pageFrom!=null){
+                val intent = Intent()
+                val activity = pageFrom.activity
+                if(activity==null){
+                    pageFrom.activity = newPageActivity(pageFrom)
+                    onStartPageActivity(pageActivity,pageFrom,intent,0)
+                }else{
+                    onResumePageActivity(pageActivity,activity,intent,0)
+                }
+            }
         }
-        mDockerLayout.removeView(pageActivity)
+        pageHeadStack.removeAll {
+            it.id==pageActivity.id
+        }
         pageActivity.performStop()
-
+        mDockerLayout.removeView(pageActivity)
+        if(pageHeadStack.isEmpty()){
+            finish()
+        }
     }
 
     override fun finish() {
@@ -210,6 +336,29 @@ abstract class PageDocker : AppCompatActivity() {
         foreachPageActivity {
             it.finish()
         }
+    }
+
+    /**
+     * 回收一些Page
+     */
+    private fun releaseSomePages(){
+        val runtime = Runtime.getRuntime()
+        val dalvikMax = runtime.maxMemory()
+        val dalvikUsed = runtime.totalMemory() - runtime.freeMemory()
+        if (dalvikUsed > ((3*dalvikMax)/4)) {
+            val index = pageHeadStack[0]
+            log("[releaseSomePages]:${index.clazz.simpleName}")
+            val activity = index.activity
+            if(activity!=null){
+                index.savedInstanceState = activity.dispatchSaveInstanceState()
+                mDockerLayout.removeView(activity)
+            }
+            index.activity = null
+        }
+    }
+
+    private fun log(msg:String){
+        EyewindLog.logLibInfo(TAG,msg)
     }
 
 }
