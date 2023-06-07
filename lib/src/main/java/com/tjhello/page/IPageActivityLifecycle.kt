@@ -31,4 +31,6 @@ interface IPageActivityLifecycle {
     fun dispatchSaveInstanceState(): Parcelable?
 
     fun dispatchRestoreInstanceState(state: Parcelable?)
+
+    fun performBackPressed()
 }

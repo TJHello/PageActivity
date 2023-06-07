@@ -62,7 +62,11 @@ abstract class PageDocker : AppCompatActivity() {
 
     override fun onBackPressed() {
         val pageActivity = getTopPageActivity()
-        pageActivity?.activity?.onBackPressed()?:super.onBackPressed()
+        if(pageActivity==null){
+            super.onBackPressed()
+        }else{
+            pageActivity.activity?.performBackPressed()
+        }
     }
 
     override fun onUserLeaveHint() {

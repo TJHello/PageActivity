@@ -3,7 +3,6 @@ package com.tjhello.page
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
-import android.graphics.Rect
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.LayoutInflater
@@ -31,6 +30,7 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     private var mResultCode = RESULT_CANCELED
     private var mResultIntent : Intent ?= null
     private var mIsFinish = false
+    val windows = PageActivityWindows(this)
 
 
     @CallSuper
@@ -143,6 +143,14 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         finish()
     }
 
+    override fun performBackPressed() {
+        val result = windows.foreachDialog {
+            return@foreachDialog it.onBackPressed()
+        }
+        if(!result){
+            onBackPressed()
+        }
+    }
 
     override fun performCreate(savedInstanceState:Parcelable?) {
 //        log("[performCreate]")
@@ -202,7 +210,7 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     }
 
     override fun dispatchRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        log("[dispatchdispatchRequestPermissionsResultActivityResult]")
+        log("[dispatchRequestPermissionsResult]")
         onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
@@ -237,12 +245,11 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     }
 
     override fun setContentView(layoutId: Int) {
-        setContentView(LayoutInflater.from(context).inflate(layoutId,null))
+        windows.setContentView(layoutId)
     }
 
     override fun setContentView(view: View) {
-        this.removeAllViews()
-        this.addView(view)
+        windows.setContentView(view)
     }
 
     override fun startActivityForResult(intent: Intent, requestCode: Int) {

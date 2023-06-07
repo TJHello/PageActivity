@@ -22,7 +22,16 @@ class LauncherPageActivity(context: Context) : PageActivity(context) {
             intent.putExtra("title","标题${++num}")
             startActivityForResult(intent,1)
         }
-
+        this.findViewById<Button>(R.id.btShowDialog).setOnClickListener {
+            HomeDialog(this)
+                .onShow {
+                    EyewindLog.i("onShow")
+                }
+                .onDismiss {
+                    EyewindLog.i("onDismiss")
+                }
+                .show()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
