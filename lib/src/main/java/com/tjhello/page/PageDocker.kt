@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.contains
+import androidx.transition.TransitionInflater
 import com.eyewind.lib.log.EyewindLog
 import com.tjhello.page.info.PageHead
 import java.util.Stack
@@ -249,11 +250,12 @@ abstract class PageDocker : AppCompatActivity() {
         if(pageFrom!=null&&pageFrom.getRequestCode()>0){
             pageActivity.dispatchActivityResult(pageFrom.getRequestCode(),pageFrom.getResultCode(),pageFrom.getResultIntent())
         }
-        pageActivity.performResume()
-        if(hasWindowFocus()){
-            pageActivity.onWindowFocusChanged(true)
+        pageActivity.onPreEnterResumeAnim {
+            pageActivity.performResume()
+            if(hasWindowFocus()){
+                pageActivity.onWindowFocusChanged(true)
+            }
         }
-
     }
 
     private fun onStartNewIntent(pageFrom: BasePageActivity?, pageHead: PageHead, intent: Intent, requestCode: Int){
@@ -275,8 +277,10 @@ abstract class PageDocker : AppCompatActivity() {
     private fun onStartPageActivity(pageFrom:BasePageActivity?, pageHead: PageHead, intent: Intent, requestCode: Int){
         log("[onStartPageActivity]")
         pageFrom?.onWindowFocusChanged(false)
-        pageFrom?.performPause()
-        pageFrom?.performStop()
+        pageFrom?.onPreExitPauseAnim {
+            pageFrom.performPause()
+            pageFrom.performStop()
+        }
 
         val pageActivity = pageHead.activity
         if(pageActivity!=null){
@@ -292,7 +296,10 @@ abstract class PageDocker : AppCompatActivity() {
             if(pageFrom!=null&&pageFrom.getRequestCode()>0){
                 pageActivity.dispatchActivityResult(pageFrom.getRequestCode(),pageFrom.getResultCode(),pageFrom.getResultIntent())
             }
-            pageActivity.performResume()
+            pageActivity.onPreEnterStartAnim {
+                pageActivity.performResume()
+
+            }
             pageHeadStack.push(PageHead(pageActivity))
             if(mDockerLayout.contains(pageActivity)){
                 mDockerLayout.removeView(pageActivity)
@@ -324,10 +331,12 @@ abstract class PageDocker : AppCompatActivity() {
         pageHeadStack.removeAll {
             it.id==pageActivity.id
         }
-        pageActivity.performStop()
-        mDockerLayout.removeView(pageActivity)
-        if(pageHeadStack.isEmpty()){
-            finish()
+        pageActivity.onPreExitFinishAnim {
+            pageActivity.performStop()
+            mDockerLayout.removeView(pageActivity)
+            if(pageHeadStack.isEmpty()){
+                finish()
+            }
         }
     }
 

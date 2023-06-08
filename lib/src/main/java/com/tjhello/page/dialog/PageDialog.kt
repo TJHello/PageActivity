@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.FrameLayout
 import com.tjhello.page.BasePageActivity
 import com.tjhello.page.Windows
+import com.tjhello.page.onEnd
 
 abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:Int=0) {
 
@@ -16,6 +17,7 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
     val windows by lazy { Windows(PageDialogView(context)) }
     private var isShowed = false
     private var isDismissed = false
+    private var enableAnim = true
 
 
     init {
@@ -34,15 +36,19 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
             isShowed = true
             windows.getDecorView().setOnClickListener {}
             pageActivity.windows.showDialog(this)
-            onShow()
+            onPreShowAnim{
+                onShow()
+            }
         }
     }
 
     open fun dismiss(){
         if(!isDismissed){
             isDismissed = true
-            pageActivity.windows.dismissDialog(this)
-            onDismiss()
+            onPreDismissAnim {
+                pageActivity.windows.dismissDialog(this)
+                onDismiss()
+            }
         }
     }
 
@@ -75,9 +81,34 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
         return this
     }
 
+    fun setEnableAnim(boolean: Boolean){
+        enableAnim = boolean
+    }
+
     open fun onBackPressed():Boolean{
         dismiss()
         return true
+    }
+
+    fun onPreShowAnim(function: () -> Unit){
+        if(enableAnim){
+            windows.getDecorView().alpha = 0f
+            windows.getDecorView().animate().alpha(1f).onEnd {
+                function()
+            }
+        }else{
+            function()
+        }
+    }
+
+    fun onPreDismissAnim(function: () -> Unit){
+        if(enableAnim){
+            windows.getDecorView().animate().alpha(0f).onEnd {
+                function()
+            }
+        }else{
+            function()
+        }
     }
 
     protected fun <T : View> findViewById(id:Int):T?{

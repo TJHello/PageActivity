@@ -45,6 +45,7 @@ interface IPageActivityMethod {
 
     fun getResources():Resources
 
+    @Deprecated("see onPreEnterStartAnim、onPreEnterResumeAnim、onPreExitFinishAnim、onPreExitPauseAnim")
     fun overridePendingTransition(@AnimRes enterAnim: Int,@AnimRes exitAnim: Int)
 
     fun isFinishing():Boolean

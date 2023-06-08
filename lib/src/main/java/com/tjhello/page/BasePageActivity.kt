@@ -5,9 +5,9 @@ import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
 import android.os.Parcelable
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +31,9 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     private var mResultIntent : Intent ?= null
     private var mIsFinish = false
     val windows = PageActivityWindows(this)
+    private var mEnableAnim = true//是否启动动画
+    private var mEnterAnim = 0
+    private var mExitAnim = 0
 
 
     @CallSuper
@@ -136,6 +139,47 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         val superData = bundle.getParcelable<Parcelable>(SAVED_KEY_SUPPER_DATA)
         super.onRestoreInstanceState(superData)
         onRestoreInstanceState(bundle)
+    }
+
+    fun onPreEnterStartAnim(function:()->Unit){
+        if(mEnableAnim){
+            translationX = getScreenWidth().toFloat()
+            animate().translationX(0f).onEnd {
+                function()
+            }
+        }else{
+            function()
+        }
+    }
+
+    fun onPreEnterResumeAnim(function:()->Unit){
+        if(mEnableAnim){
+            animate().translationX(0f).onEnd {
+                function()
+            }
+        }else{
+            function()
+        }
+    }
+
+    fun onPreExitFinishAnim(function: () -> Unit){
+        if(mEnableAnim){
+            animate().translationX(getScreenWidth().toFloat()).onEnd {
+                function()
+            }
+        }else{
+            function()
+        }
+    }
+
+    fun onPreExitPauseAnim(function: () -> Unit){
+        if(mEnableAnim){
+            animate().translationX(-getScreenWidth().toFloat()).onEnd {
+                function()
+            }
+        }else{
+            function()
+        }
     }
 
     open fun onBackPressed(){
@@ -294,8 +338,11 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         return context.resources
     }
 
-    override fun overridePendingTransition(enterAnim: Int, exitAnim: Int) {
 
+    @Deprecated("please refer to onPreEnterStartAnim、onPreEnterResumeAnim、onPreExitFinishAnim、onPreExitPauseAnim")
+    override fun overridePendingTransition(enterAnim: Int, exitAnim: Int) {
+        mEnterAnim = enterAnim
+        mEnterAnim = exitAnim
     }
 
     override fun isFinishing(): Boolean {
@@ -340,4 +387,11 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         EyewindLog.logLibInfo(this::class.java.simpleName,msg)
     }
 
+    fun getScreenWidth(): Int {
+        return context.resources.displayMetrics.widthPixels
+    }
+
+    fun getScreenHeight(): Int {
+        return context.resources.displayMetrics.heightPixels
+    }
 }
