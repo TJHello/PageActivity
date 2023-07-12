@@ -1,0 +1,2 @@
+-keep class * extends com.tjhello.page.BasePageActivity{*;}
+-keep class com.tjhello.page.BasePageActivity{*;}

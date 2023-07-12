@@ -1,5 +1,7 @@
 package com.tjhello.page
 
+import android.app.Application
+import android.app.LoaderManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
@@ -7,6 +9,8 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.view.MotionEvent
 import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import androidx.annotation.CallSuper
@@ -383,6 +387,30 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         mPageDocker.runOnUiThread(runnable)
     }
 
+    override fun getWindow(): Window {
+        return mPageDocker.window
+    }
+
+    override fun getWindowManager(): WindowManager {
+        return mPageDocker.windowManager
+    }
+
+    override fun getApplication(): Application {
+        return mPageDocker.application
+    }
+
+    override fun getLoaderManager(): LoaderManager {
+        return mPageDocker.loaderManager
+    }
+
+    override fun getCurrentFocus(): View? {
+        return mPageDocker.currentFocus
+    }
+
+    override fun getSystemService(name: String): Any? {
+        return mPageDocker.getSystemService(name)
+    }
+
     private fun log(msg:String){
         EyewindLog.logLibInfo(this::class.java.simpleName,msg)
     }
@@ -393,5 +421,9 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
 
     fun getScreenHeight(): Int {
         return context.resources.displayMetrics.heightPixels
+    }
+
+    fun enableAnim(bool:Boolean){
+        mEnableAnim = bool
     }
 }

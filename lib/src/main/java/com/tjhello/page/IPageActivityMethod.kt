@@ -1,8 +1,12 @@
 package com.tjhello.page
 
+import android.app.Application
+import android.app.LoaderManager
 import android.content.Intent
 import android.content.res.Resources
 import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import androidx.annotation.AnimRes
 import androidx.annotation.ColorRes
 import androidx.annotation.LayoutRes
@@ -52,4 +56,16 @@ interface IPageActivityMethod {
 
     fun runOnUiThread(runnable: Runnable)
 
+    fun getWindow(): Window
+
+    fun getWindowManager():WindowManager
+
+    fun getApplication():Application
+
+    @Deprecated("Use androidx.fragment.app.FragmentActivity.getSupportLoaderManager()")
+    fun getLoaderManager(): LoaderManager
+
+    fun getCurrentFocus():View?
+
+    fun getSystemService(name:String):Any?
 }
