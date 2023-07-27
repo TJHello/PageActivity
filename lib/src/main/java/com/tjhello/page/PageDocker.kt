@@ -23,6 +23,8 @@ abstract class PageDocker : AppCompatActivity() {
 
     abstract fun onGetHomePage():Class<out BasePageActivity>
 
+    abstract fun onPreInjectRootLayout()
+
     private lateinit var mDockerLayout : FrameLayout
     private val pageHeadStack = Stack<PageHead>()
 
@@ -30,6 +32,7 @@ abstract class PageDocker : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         isStartIng = true
         PageController.bindDocker(this)
+        onPreInjectRootLayout()
         injectRootLayout()
         startPageActivity(null,Intent(this,onGetHomePage()))
     }
@@ -333,15 +336,18 @@ abstract class PageDocker : AppCompatActivity() {
         }
         pageActivity.onPreExitFinishAnim {
             pageActivity.performStop()
-            mDockerLayout.removeView(pageActivity)
             if(pageHeadStack.isEmpty()){
                 finish()
+            }else{
+                mDockerLayout.removeView(pageActivity)
             }
         }
     }
 
     override fun finish() {
-        finishAllPage()
+        if(pageHeadStack.size>1){
+            finishAllPage()
+        }
         super.finish()
     }
 
