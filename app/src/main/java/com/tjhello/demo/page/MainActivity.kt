@@ -11,6 +11,10 @@ class MainActivity : PageDocker() {
         return LauncherPageActivity::class.java
     }
 
+    override fun onPreInjectRootLayout() {
+
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

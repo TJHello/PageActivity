@@ -8,8 +8,6 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.contains
-import androidx.transition.TransitionInflater
-import com.eyewind.lib.log.EyewindLog
 import com.tjhello.page.info.PageHead
 import java.util.Stack
 
@@ -377,7 +375,7 @@ abstract class PageDocker : AppCompatActivity() {
     }
 
     private fun log(msg:String){
-        EyewindLog.logLibInfo(TAG,msg)
+        LogUtil.i("[${TAG}]:$msg")
     }
 
 }

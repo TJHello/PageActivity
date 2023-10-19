@@ -11,11 +11,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
-import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.appcompat.app.AppCompatActivity
-import com.eyewind.lib.log.EyewindLog
 
 open class BasePageActivity(private val context:Context) : FrameLayout(context),IPageActivityLifecycle,IPageActivityMethod {
 
@@ -412,7 +410,7 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     }
 
     private fun log(msg:String){
-        EyewindLog.logLibInfo(this::class.java.simpleName,msg)
+        LogUtil.i("[${this::class.java.simpleName}]:$msg")
     }
 
     fun getScreenWidth(): Int {

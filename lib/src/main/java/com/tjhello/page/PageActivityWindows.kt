@@ -3,6 +3,7 @@ package com.tjhello.page
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.get
 import com.tjhello.page.dialog.PageDialog
 import java.util.Stack
 
@@ -16,7 +17,13 @@ class PageActivityWindows(private val pageActivity: BasePageActivity):Windows(pa
     private val layoutDialog : ViewGroup = getDecorView().findViewById(R.id.__PageDialogLayout)
     private val mDialogStack = Stack<PageDialog>()
 
-    fun getLayoutActivity():ViewGroup = layoutActivity
+    fun getLayoutActivity():ViewGroup?{
+        return if(layoutActivity.childCount>0){
+            layoutActivity[0] as ViewGroup
+        }else{
+            null
+        }
+    }
 
     fun getLayoutDialog():ViewGroup = layoutDialog
 

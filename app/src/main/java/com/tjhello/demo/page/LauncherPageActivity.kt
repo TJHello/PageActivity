@@ -3,9 +3,7 @@ package com.tjhello.demo.page
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.os.Parcelable
 import android.widget.Button
-import com.eyewind.lib.log.EyewindLog
 import com.tjhello.page.PageActivity
 
 class LauncherPageActivity(context: Context) : PageActivity(context) {
@@ -16,7 +14,6 @@ class LauncherPageActivity(context: Context) : PageActivity(context) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.layoutcher_page_activity_layout)
         val value = savedInstanceState?.getString("key")
-        EyewindLog.i("[onCreate]:$value")
         this.findViewById<Button>(R.id.btNext).setOnClickListener {
             val intent = Intent(context,Test1PageActivity::class.java)
             intent.putExtra("title","标题${++num}")
@@ -25,10 +22,8 @@ class LauncherPageActivity(context: Context) : PageActivity(context) {
         this.findViewById<Button>(R.id.btShowDialog).setOnClickListener {
             HomeDialog(this)
                 .onShow {
-                    EyewindLog.i("onShow")
                 }
                 .onDismiss {
-                    EyewindLog.i("onDismiss")
                 }
                 .show()
         }
@@ -45,6 +40,5 @@ class LauncherPageActivity(context: Context) : PageActivity(context) {
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         val value = savedInstanceState.getString("key")
-        EyewindLog.i("[onRestoreInstanceState]:$value")
     }
 }

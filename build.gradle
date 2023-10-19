@@ -8,7 +8,7 @@ plugins {
 ext.ONLINE_REPO_USERNAME='5fa3980bcd2214ba0ea90846'
 ext.ONLINE_REPO_PASSWORD='06MnA53Z)lyo'
 ext.ONLINE_REPO_URL='https://packages.aliyun.com/maven/repository/2046286-release-wbmgVx/'
-
+ext.IN_EYEWIND = false
 
 task clean(type: Delete) {
     delete rootProject.buildDir
