@@ -4,7 +4,7 @@ plugins {
     id 'maven-publish'
 }
 
-ext.verName = "0.1.1-t24"
+ext.verName = "0.1.1-t29"
 ext.verCode = 1
 ext.POM_ARTIFACT_ID = 'page_activity'
 ext.uploadToOnline = true
@@ -60,7 +60,7 @@ afterEvaluate{
         publications {
             release(MavenPublication) {
                 from components.release
-                groupId = "com.tjhello.view"
+                groupId = "com.njxing.view"
                 artifactId = POM_ARTIFACT_ID
                 version = verName
                 artifact sourcesJar

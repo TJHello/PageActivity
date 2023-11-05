@@ -1,2 +1,2 @@
--keep class * extends com.tjhello.page.BasePageActivity{*;}
--keep class com.tjhello.page.BasePageActivity{*;}
+-keep class * extends com.njxing.page.BasePageActivity{*;}
+-keep class com.njxing.page.BasePageActivity{*;}
