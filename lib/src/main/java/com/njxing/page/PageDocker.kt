@@ -23,6 +23,10 @@ abstract class PageDocker : AppCompatActivity() {
 
     abstract fun onPreInjectRootLayout()
 
+    protected open fun onCustomDockerLayout():FrameLayout?{
+        return null
+    }
+
     private lateinit var mDockerLayout : FrameLayout
     private val pageHeadStack = Stack<PageHead>()
 
@@ -100,9 +104,14 @@ abstract class PageDocker : AppCompatActivity() {
     }
 
     private fun injectRootLayout(){
-        mDockerLayout = FrameLayout(this)
-        this.window.addContentView(mDockerLayout,
-            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT))
+        val customLayout = onCustomDockerLayout()
+        if(customLayout==null){
+            mDockerLayout = FrameLayout(this)
+            this.window.addContentView(mDockerLayout,
+                ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT))
+        }else{
+            this.mDockerLayout = customLayout
+        }
     }
 
     private fun getTopPageActivity():PageHead?{

@@ -4,7 +4,7 @@ plugins {
     id 'maven-publish'
 }
 
-ext.verName = "0.1.1-t29"
+ext.verName = "0.1.1-t32"
 ext.verCode = 1
 ext.POM_ARTIFACT_ID = 'page_activity'
 ext.uploadToOnline = true
@@ -33,6 +33,12 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 dependencies {
@@ -46,24 +52,16 @@ dependencies {
 
 }
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-task sourcesJar(type: Jar) {
-    getArchiveClassifier().set('sources')
-    from android.sourceSets.main.java.source
-}
-
 afterEvaluate{
     publishing {
         publications {
             release(MavenPublication) {
-                from components.release
                 groupId = "com.njxing.view"
                 artifactId = POM_ARTIFACT_ID
                 version = verName
-                artifact sourcesJar
+                afterEvaluate {
+                    from components.release
+                }
             }
         }
         repositories {
