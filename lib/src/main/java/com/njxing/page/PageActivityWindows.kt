@@ -7,25 +7,15 @@ import androidx.core.view.get
 import com.njxing.page.dialog.PageDialog
 import java.util.Stack
 
-class PageActivityWindows(private val pageActivity: BasePageActivity):Windows(pageActivity) {
+class PageActivityWindows(val pageActivity: BasePageActivity):Windows(pageActivity) {
 
-    init {
-        View.inflate(pageActivity.context,R.layout.lib_page_activity_windows_layout,pageActivity)
-    }
-
-    private val layoutActivity : ViewGroup = getDecorView().findViewById(R.id.__PageActivityLayout)
-    private val layoutDialog : ViewGroup = getDecorView().findViewById(R.id.__PageDialogLayout)
+    private val layoutActivity : ViewGroup = pageActivity.findViewById(R.id.__PageActivityLayout)
+    private val layoutDialog : ViewGroup = pageActivity.findViewById(R.id.__PageDialogLayout)
     private val mDialogStack = Stack<PageDialog>()
 
-    fun getLayoutActivity():ViewGroup?{
-        return if(layoutActivity.childCount>0){
-            layoutActivity[0] as ViewGroup
-        }else{
-            null
-        }
-    }
+    fun getLayoutActivity():ViewGroup = layoutActivity[0] as ViewGroup
 
-    fun getLayoutDialog():ViewGroup = layoutDialog
+    fun getLayoutDialog():ViewGroup = layoutDialog[0] as ViewGroup
 
     fun foreachActivity(function:(activity:PageActivity)->Boolean):Boolean{
         return foreach<PageActivity>(layoutActivity){
@@ -47,15 +37,18 @@ class PageActivityWindows(private val pageActivity: BasePageActivity):Windows(pa
     }
 
     fun showDialog(dialog: PageDialog){
-        val dialogView = dialog.windows.getDecorView()
+        val dialogView = dialog.windows
         dialogView.rootView.setOnClickListener {  }
+        LogUtil.i("PageActivityWindows"){
+            "showDialog:${layoutDialog.childCount}"
+        }
         layoutDialog.addView(dialogView)
         mDialogStack.push(dialog)
     }
 
     fun dismissDialog(dialog: PageDialog){
         if(layoutDialog.childCount>0){
-            val dialogView = dialog.windows.getDecorView()
+            val dialogView = dialog.windows
             layoutDialog.removeView(dialogView)
             mDialogStack.remove(dialog)
             if(mDialogStack.empty()){
@@ -66,14 +59,14 @@ class PageActivityWindows(private val pageActivity: BasePageActivity):Windows(pa
     }
 
     override fun setContentView(layoutId: Int) {
-        val view = LayoutInflater.from(pageActivity.context).inflate(layoutId, null, false)
+        val view = LayoutInflater.from(pageActivity.context).inflate(layoutId, null)
         layoutActivity.removeAllViews()
-        layoutActivity.addView(view)
+        layoutActivity.addView(view,LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT))
     }
 
     override fun setContentView(view: View) {
         layoutActivity.removeAllViews()
-        layoutActivity.addView(view)
+        layoutActivity.addView(view,LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT))
     }
 
     private inline fun <reified T> foreach (viewGroup: ViewGroup, function: (t: T) -> Boolean):Boolean{

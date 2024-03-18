@@ -3,6 +3,7 @@ package com.njxing.page
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -30,13 +31,21 @@ abstract class PageDocker : AppCompatActivity() {
     private lateinit var mDockerLayout : FrameLayout
     private val pageHeadStack = Stack<PageHead>()
 
+    fun setDebug(bool:Boolean){
+        LogUtil.isDebug = bool
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isStartIng = true
+        log{"onCreate"}
         PageController.bindDocker(this)
         onPreInjectRootLayout()
         injectRootLayout()
-        startPageActivity(null,Intent(this,onGetHomePage()))
+        if(savedInstanceState==null){
+            startPageActivity(null,Intent(this,onGetHomePage()))
+        }
     }
 
     override fun onPause() {
@@ -103,11 +112,63 @@ abstract class PageDocker : AppCompatActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        log{"onSaveInstanceState"}
+        val clazzArray = arrayListOf<String?>()
+        val idArray = arrayListOf<Int>()
+        val stateArray = arrayListOf<Parcelable?>()
+        val size = pageHeadStack.size
+        for(i in 0 until size){
+            val head = pageHeadStack[i]
+            idArray.add(head.id)
+            clazzArray.add(head.clazz.name)
+            head.savedInstanceState = head.activity?.dispatchSaveInstanceState()
+            stateArray.add(head.savedInstanceState)
+        }
+        outState.putIntegerArrayList("__head_id_list",idArray)
+        outState.putStringArrayList("__head_clazz_list",clazzArray)
+        outState.putParcelableArrayList("__head_state_list",stateArray)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        log{"onRestoreInstanceState"}
+        val idArray = savedInstanceState.getIntegerArrayList("__head_id_list")
+        val clazzArray = savedInstanceState.getStringArrayList("__head_clazz_list")
+        val stateArray = savedInstanceState.getParcelableArrayList<Parcelable>("__head_state_list")
+        if(idArray!=null&&clazzArray!=null&&stateArray!=null){
+            pageHeadStack.clear()
+            val size = idArray.size
+            for(i in 0 until size){
+                val id = idArray[i]
+                val checkHead = findPageActivity {
+                    it.id==id
+                }
+                if(checkHead==null){
+                    val clazz = Class.forName(clazzArray[i])
+                    val head = PageHead(this,id, clazz as Class<out BasePageActivity>)
+                    head.savedInstanceState = stateArray[i]
+                    pageHeadStack.push(head)
+                    log {
+                        "onRestoreInstanceState:add:id=$id,clazz=$clazz"
+                    }
+                }
+            }
+        }
+        if(pageHeadStack.isNotEmpty()){
+            val head = pageHeadStack.pop()
+            this.onStartPageActivity(null,head,Intent(this,onGetHomePage()),0)
+        }else{
+            startPageActivity(null,Intent(this,onGetHomePage()))
+        }
+    }
+
     private fun injectRootLayout(){
         val customLayout = onCustomDockerLayout()
         if(customLayout==null){
             mDockerLayout = FrameLayout(this)
-            this.window.addContentView(mDockerLayout,
+            this.window.setContentView(mDockerLayout,
                 ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT))
         }else{
             this.mDockerLayout = customLayout
@@ -129,9 +190,9 @@ abstract class PageDocker : AppCompatActivity() {
         val count = mDockerLayout.childCount
         for(i in count-1 downTo 0){
             val view = mDockerLayout.getChildAt(i)
-            if(view is PageActivity){
+            if(view is PageActivityWindows){
                 if(view.id == index.id){
-                    return view
+                    return view.pageActivity
                 }
             }
         }
@@ -149,12 +210,13 @@ abstract class PageDocker : AppCompatActivity() {
 
     private fun foreachPageActivity(function:(BasePageActivity)->Unit){
         for (i in  mDockerLayout.childCount-1 downTo 0){
-            val pageActivity = mDockerLayout.getChildAt(i) as BasePageActivity
+            val pageActivity = (mDockerLayout.getChildAt(i) as PageActivityWindows).pageActivity
             function(pageActivity)
         }
     }
 
     internal fun startPageActivity(pageFrom:BasePageActivity?,intent: Intent,requestCode: Int=0){
+        if(isFinishing||isDestroyed) return
         val component = intent.component
         if(component!=null){
             val className = component.className
@@ -180,7 +242,7 @@ abstract class PageDocker : AppCompatActivity() {
                         val pageActivity = this.getPageActivity(clazz)
                         if(pageActivity!=null&&pageActivity::class.java.name==className){
                             for (i in  mDockerLayout.childCount-1 downTo 0){
-                                val page = mDockerLayout.getChildAt(i) as BasePageActivity
+                                val page = (mDockerLayout.getChildAt(i) as PageActivityWindows).pageActivity
                                 if(page.id==pageActivity.id){
                                     finishPageActivity(page)//结束掉自己,此处如果是单例模式可以不移除自己
                                     break
@@ -200,7 +262,7 @@ abstract class PageDocker : AppCompatActivity() {
                         }
                         if(pageActivityIndex!=null&&pageActivityIndex::class.java.name==className){
                             for (i in  mDockerLayout.childCount-1 downTo 0){
-                                val page = mDockerLayout.getChildAt(i) as BasePageActivity
+                                val page = (mDockerLayout.getChildAt(i) as PageActivityWindows).pageActivity
                                 if(page.id==pageActivityIndex.id){
                                     break
                                 }
@@ -254,13 +316,14 @@ abstract class PageDocker : AppCompatActivity() {
 
 
     private fun onResumePageActivity(pageFrom: BasePageActivity?, pageActivity: BasePageActivity, intent: Intent, requestCode: Int){
-        log("[onResumePageActivity]")
-//        pageActivity.setWhereFromKey(pageFrom?.id?:-1)
+        log{"[onResumePageActivity]"}
+        pageActivity.setWhereFromKey(pageFrom?.id?:-1)
         pageActivity.setRequestCode(requestCode)
         if(pageFrom!=null&&pageFrom.getRequestCode()>0){
             pageActivity.dispatchActivityResult(pageFrom.getRequestCode(),pageFrom.getResultCode(),pageFrom.getResultIntent())
         }
-        pageActivity.onPreEnterResumeAnim {
+        val enterAnim = pageFrom?.mEnterAnim?:0
+        pageActivity.onPreEnterResumeAnim(enterAnim) {
             pageActivity.performResume()
             if(hasWindowFocus()){
                 pageActivity.onWindowFocusChanged(true)
@@ -271,13 +334,13 @@ abstract class PageDocker : AppCompatActivity() {
     private fun onStartNewIntent(pageFrom: BasePageActivity?, pageHead: PageHead, intent: Intent, requestCode: Int){
         val pageActivity = pageHead.activity
         if(pageActivity==null){
-            log("[onStartNewIntent]pageActivity==null")
+            log{"[onStartNewIntent]pageActivity==null"}
             //activity被回收，重新启动
             val activity = newPageActivity(pageHead)
             pageHead.activity = activity
             onStartPageActivity(pageFrom,pageHead,intent, requestCode)
         }else{
-            log("[onStartNewIntent]")
+            log{"[onStartNewIntent]"}
             pageActivity.setWhereFromKey(pageFrom?.id?:-1)
             pageActivity.setRequestCode(requestCode)
             pageActivity.performNewIntent(intent)
@@ -285,7 +348,8 @@ abstract class PageDocker : AppCompatActivity() {
     }
 
     private fun onStartPageActivity(pageFrom:BasePageActivity?, pageHead: PageHead, intent: Intent, requestCode: Int){
-        log("[onStartPageActivity]")
+        log{"[onStartPageActivity]${pageHead.clazz.name}"}
+        val enterAnim = pageFrom?.mEnterAnim?:0
         pageFrom?.onWindowFocusChanged(false)
         pageFrom?.onPreExitPauseAnim {
             pageFrom.performPause()
@@ -308,21 +372,27 @@ abstract class PageDocker : AppCompatActivity() {
                 pageActivity.dispatchActivityResult(pageFrom.getRequestCode(),pageFrom.getResultCode(),pageFrom.getResultIntent())
             }
             if(pageHeadStack.isNotEmpty()){
-                pageActivity.onPreEnterStartAnim {
+                pageActivity.onPreEnterStartAnim(enterAnim) {
+                    if(pageFrom!=null){
+                        pageActivity.runOnUiThread{
+                            pageActivity.onWindowFocusChanged(true)
+                        }
+                    }
                     pageActivity.performResume()
 
                 }
             }
 
             pageHeadStack.push(PageHead(pageActivity))
-            if(mDockerLayout.contains(pageActivity)){
-                mDockerLayout.removeView(pageActivity)
+            if(mDockerLayout.contains(pageActivity.getPageWindows())){
+                mDockerLayout.removeView(pageActivity.getPageWindows())
             }
-            mDockerLayout.addView(pageActivity)
+            mDockerLayout.addView(pageActivity.getPageWindows())
         }
     }
 
     internal fun finishPageActivity(pageActivity: BasePageActivity){
+        log { "finishPageActivity" }
         pageActivity.onWindowFocusChanged(false)
         pageActivity.performPause()
         val pageFrom = findPageActivity {
@@ -339,6 +409,17 @@ abstract class PageDocker : AppCompatActivity() {
             }else{
                 onResumePageActivity(pageActivity,activity,intent,pageActivity.getRequestCode())
             }
+        }else{
+            val count = mDockerLayout.childCount
+            val head = if(pageHeadStack.size>1) pageHeadStack[pageHeadStack.size-2] else null
+            val activity = if(count>1) (mDockerLayout.getChildAt(count-2) as PageActivityWindows).pageActivity else null
+            log { "head.size=${pageHeadStack.size},count=$count" }
+            if(activity==null&&head!=null) {
+                pageHeadStack.removeAll {
+                    it.id == head.id
+                }
+                onStartPageActivity(pageActivity,head,Intent(),pageActivity.getRequestCode())
+            }
         }
         pageHeadStack.removeAll {
             it.id==pageActivity.id
@@ -348,7 +429,7 @@ abstract class PageDocker : AppCompatActivity() {
         }else{
             pageActivity.onPreExitFinishAnim {
                 pageActivity.performStop()
-                mDockerLayout.removeView(pageActivity)
+                mDockerLayout.removeView(pageActivity.getPageWindows())
             }
         }
     }
@@ -375,18 +456,20 @@ abstract class PageDocker : AppCompatActivity() {
         val dalvikUsed = runtime.totalMemory() - runtime.freeMemory()
         if (dalvikUsed > ((3*dalvikMax)/4)) {
             val index = pageHeadStack[0]
-            log("[releaseSomePages]:${index.clazz.simpleName}")
+            log{"[releaseSomePages]:${index.clazz.simpleName}"}
             val activity = index.activity
             if(activity!=null){
                 index.savedInstanceState = activity.dispatchSaveInstanceState()
-                mDockerLayout.removeView(activity)
+                mDockerLayout.removeView(activity.getPageWindows())
             }
             index.activity = null
         }
     }
 
-    private fun log(msg:String){
-        LogUtil.i("[${TAG}]:$msg")
+    private fun log(function:()->String){
+        LogUtil.i(TAG){
+            function()
+        }
     }
 
 }

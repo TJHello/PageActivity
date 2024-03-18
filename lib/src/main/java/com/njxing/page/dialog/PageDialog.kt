@@ -18,6 +18,8 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
     private var isShowed = false
     private var isDismissed = false
     private var enableAnim = true
+    private var cancelable = true
+    private var canceledOnTouchOutside = true
 
 
     init {
@@ -34,8 +36,12 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
     open fun show(){
         if(!isShowed){
             isShowed = true
-            windows.getDecorView().setOnClickListener {}
-            pageActivity.windows.showDialog(this)
+            windows.getDecorView().setOnClickListener {
+                if(canceledOnTouchOutside){
+                    dismiss()
+                }
+            }
+            pageActivity.getPageWindows().showDialog(this)
             onPreShowAnim{
                 onShow()
             }
@@ -46,21 +52,21 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
         if(!isDismissed){
             isDismissed = true
             onPreDismissAnim {
-                pageActivity.windows.dismissDialog(this)
+                pageActivity.getPageWindows().dismissDialog(this)
                 onDismiss()
             }
         }
     }
 
-    fun setContentView(layoutId: Int){
+    protected fun setContentView(layoutId: Int){
         windows.setContentView(layoutId)
     }
 
-    fun setContentView(view:View){
+    protected fun setContentView(view:View){
         windows.setContentView(view)
     }
 
-    fun listenerClick(id:Int){
+    protected fun listenerClick(id:Int){
         this.findViewById<View>(id)?.setOnClickListener {
             onClick(it)
         }
@@ -86,7 +92,9 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
     }
 
     open fun onBackPressed():Boolean{
-        dismiss()
+        if(cancelable){
+            dismiss()
+        }
         return true
     }
 
@@ -109,6 +117,14 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
         }else{
             function()
         }
+    }
+
+    protected fun setCancelable(bool:Boolean){
+        cancelable = bool
+    }
+
+    protected fun setCanceledOnTouchOutside(bool: Boolean){
+        canceledOnTouchOutside = bool
     }
 
     protected fun <T : View> findViewById(id:Int):T?{

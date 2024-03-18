@@ -5,9 +5,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 
-open class Windows(private val layout: FrameLayout) {
+open class Windows(private val layout: ViewGroup):FrameLayout(layout.context) {
 
-    private val mDecorView: ViewGroup = layout
+    private var mDecorView: ViewGroup = layout
+
+    init {
+        this.addView(layout, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+    }
 
     open fun setContentView(view: View) {
         mDecorView.removeAllViews()
@@ -16,7 +20,7 @@ open class Windows(private val layout: FrameLayout) {
 
     open fun setContentView(layoutId: Int) {
         mDecorView.removeAllViews()
-        val view = LayoutInflater.from(layout.context).inflate(layoutId, null)
+        val view = LayoutInflater.from(layout.context).inflate(layoutId, null,false)
         mDecorView.addView(view)
     }
 

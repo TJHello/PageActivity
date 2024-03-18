@@ -7,15 +7,27 @@ import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
 import android.os.Parcelable
+import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.appcompat.app.AppCompatActivity
 
-open class BasePageActivity(private val context:Context) : FrameLayout(context),IPageActivityLifecycle,IPageActivityMethod {
+open class BasePageActivity : FrameLayout,IPageActivityLifecycle,IPageActivityMethod {
+
+    constructor(context: Context):super(context)
+
+    constructor(context: Context,attrs: AttributeSet):super(context,attrs)
+
+    constructor(context: Context, attrs: AttributeSet, defStyleAttr:Int):super(context,attrs,defStyleAttr)
+    init {
+        View.inflate(context,R.layout.lib_page_activity_windows_layout,this)
+    }
 
     companion object{
         const val RESULT_OK = -1
@@ -32,73 +44,73 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     private var mResultCode = RESULT_CANCELED
     private var mResultIntent : Intent ?= null
     private var mIsFinish = false
-    val windows = PageActivityWindows(this)
+    private val mPageWindows = PageActivityWindows(this)
     private var mEnableAnim = true//是否启动动画
-    private var mEnterAnim = 0
-    private var mExitAnim = 0
+    internal var mEnterAnim = 0
+    internal var mExitAnim = 0
 
 
     @CallSuper
     protected open fun onCreate(savedInstanceState:Bundle?){
-        log("[onCreate]")
+        log{"[onCreate]"}
     }
 
     @CallSuper
     protected open fun onResume(){
-        log("[onResume]")
+        log{"[onResume]"}
     }
 
     @CallSuper
     protected open fun onPause(){
-        log("[onPause]")
+        log{"[onPause]"}
     }
 
     @CallSuper
     protected open fun onDestroy(){
-        log("[onDestroy]")
+        log{"[onDestroy]"}
     }
 
     @CallSuper
     protected open fun onStart(){
-        log("[onStart]")
+        log{"[onStart]"}
     }
 
     @CallSuper
     protected open fun onStop(){
-        log("[onStop]")
+        log{"[onStop]"}
     }
 
     override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
         super.onWindowFocusChanged(hasWindowFocus)
-        log("[onWindowFocusChanged]$hasWindowFocus")
+        log{"[onWindowFocusChanged]$hasWindowFocus"}
     }
 
     @CallSuper
     open fun onPostCreate(savedInstanceState:Bundle?){
-//        log("[onPostCreate]")
+//        log{"[onPostCreate]"}
     }
 
     @CallSuper
     open fun onPostResume(){
-//        log("[onPostResume]")
+//        log{"[onPostResume]"}
     }
 
     //长按Home键或者点击Home键的时候触发
     @CallSuper
     protected open fun onUserLeaveHint(){
-        log("[onUserLeaveHint]")
+        log{"[onUserLeaveHint]"}
     }
 
     //内存状态回调
     @CallSuper
     open fun onTrimMemory(level:Int){
-        log("[onTrimMemory]level:$level")
+        log{"[onTrimMemory]level:$level"}
     }
 
     //二次启动Activity的时候
     @CallSuper
     protected open fun onNewIntent(intent: Intent){
-        log("[onNewIntent]")
+        log{"[onNewIntent]"}
     }
 
     @CallSuper
@@ -107,20 +119,20 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         permissions:Array<out String>,
         grantResults:IntArray
     ){
-        log("[onRequestPermissionsResult]")
+        log{"[onRequestPermissionsResult]"}
     }
 
     @CallSuper
     protected open fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?){
-        log("[onActivityResult]requestCode=$requestCode,resultCode=$resultCode,data=$data")
+        log{"[onActivityResult]requestCode=$requestCode,resultCode=$resultCode,data=$data"}
     }
 
     protected open fun onSaveInstanceState(outState:Bundle){
-        log("[onSaveInstanceState]")
+        log{"[onSaveInstanceState]"}
     }
 
     protected open fun onRestoreInstanceState(savedInstanceState:Bundle){
-        log("[onRestoreInstanceState]")
+        log{"[onRestoreInstanceState]"}
     }
 
     final override fun onSaveInstanceState(): Parcelable {
@@ -135,7 +147,7 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     }
 
     final override fun onRestoreInstanceState(state: Parcelable?) {
-        log("[onRestoreInstanceState]")
+        log{"[onRestoreInstanceState]"}
         if(state==null) return
         val bundle = state as Bundle
         val superData = bundle.getParcelable<Parcelable>(SAVED_KEY_SUPPER_DATA)
@@ -143,21 +155,29 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         onRestoreInstanceState(bundle)
     }
 
-    open fun onPreEnterStartAnim(function:()->Unit){
+    open fun onPreEnterStartAnim(animId: Int,function:()->Unit){
         if(mEnableAnim){
-            translationX = getScreenWidth().toFloat()
-            animate().translationX(0f).onEnd {
-                function()
+            if(animId!=0){
+                playAnim(animId,function)
+            }else{
+                translationX = getScreenWidth().toFloat()
+                animate().translationX(0f).onEnd {
+                    function()
+                }
             }
         }else{
             function()
         }
     }
 
-    open fun onPreEnterResumeAnim(function:()->Unit){
+    open fun onPreEnterResumeAnim(animId: Int,function:()->Unit){
         if(mEnableAnim){
-            animate().translationX(0f).onEnd {
-                function()
+            if(animId!=0){
+                playAnim(animId,function)
+            }else{
+                animate().translationX(0f).onEnd {
+                    function()
+                }
             }
         }else{
             function()
@@ -166,8 +186,13 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
 
     open fun onPreExitFinishAnim(function: () -> Unit){
         if(mEnableAnim){
-            animate().translationX(getScreenWidth().toFloat()).onEnd {
-                function()
+            if(mExitAnim!=0){
+                playAnim(mExitAnim,function)
+                mExitAnim = 0
+            }else{
+                animate().translationX(getScreenWidth().toFloat()).onEnd {
+                    function()
+                }
             }
         }else{
             function()
@@ -176,21 +201,44 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
 
     open fun onPreExitPauseAnim(function: () -> Unit){
         if(mEnableAnim){
-            animate().translationX(-getScreenWidth().toFloat()).onEnd {
-                function()
+            if(mExitAnim!=0){
+                playAnim(mExitAnim,function)
+                mExitAnim = 0
+            }else{
+                animate().translationX(-getScreenWidth().toFloat()).onEnd {
+                    function()
+                }
             }
         }else{
             function()
         }
     }
 
+    private fun playAnim(animId:Int,function: () -> Unit){
+        val animation = AnimationUtils.loadAnimation(context,animId)
+        animation.setAnimationListener(object : Animation.AnimationListener {
+            override fun onAnimationStart(animation: Animation?) {
+
+            }
+
+            override fun onAnimationEnd(animation: Animation?) {
+                function()
+            }
+
+            override fun onAnimationRepeat(animation: Animation?) {
+            }
+
+        })
+        this.mPageWindows.startAnimation(animation)
+    }
+
     open fun onBackPressed(){
-        log("[onBackPressed]")
+        log{"[onBackPressed]"}
         finish()
     }
 
     override fun performBackPressed() {
-        val result = windows.foreachDialog {
+        val result = mPageWindows.foreachDialog {
             return@foreachDialog it.onBackPressed()
         }
         if(!result){
@@ -199,7 +247,7 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     }
 
     override fun performCreate(savedInstanceState:Parcelable?) {
-//        log("[performCreate]")
+//        log{"[performCreate]"}
         if(savedInstanceState!=null&&savedInstanceState is Bundle){
             onCreate(savedInstanceState)
             onPostCreate(savedInstanceState)
@@ -210,53 +258,53 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     }
 
     override fun performNewIntent(intent: Intent) {
-//        log("[performNewIntent]")
+//        log{"[performNewIntent]"}
         onNewIntent(intent)
     }
 
     override fun performStart() {
-//        log("[performStart]")
+//        log{"[performStart]"}
         onStart()
     }
 
     override fun performRestart() {
-//        log("[performRestart]")
+//        log{"[performRestart]"}
         performStart()
     }
 
     override fun performResume() {
-//        log("[performResume]")
+//        log{"[performResume]"}
         onResume()
         onPostResume()
     }
 
     override fun performPause() {
-//        log("[performPause]")
+//        log{"[performPause]"}
         onPause()
     }
 
     override fun performUserLeaving() {
-//        log("[performUserLeaving]")
+//        log{"[performUserLeaving]"}
         onUserLeaveHint()
     }
 
     override fun performStop() {
-//        log("[performStop]")
+//        log{"[performStop]"}
         onStop()
     }
 
     override fun performDestroy() {
-        log("[performDestroy]")
+        log{"[performDestroy]"}
         onDestroy()
     }
 
     override fun dispatchActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        log("[dispatchActivityResult]")
+        log{"[dispatchActivityResult]"}
         onActivityResult(requestCode, resultCode, data)
     }
 
     override fun dispatchRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        log("[dispatchRequestPermissionsResult]")
+        log{"[dispatchRequestPermissionsResult]"}
         onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
@@ -291,11 +339,11 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     }
 
     override fun setContentView(layoutId: Int) {
-        windows.setContentView(layoutId)
+        mPageWindows.setContentView(layoutId)
     }
 
     override fun setContentView(view: View) {
-        windows.setContentView(view)
+        mPageWindows.setContentView(view)
     }
 
     override fun startActivityForResult(intent: Intent, requestCode: Int) {
@@ -344,7 +392,7 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
     @Deprecated("please refer to onPreEnterStartAnim、onPreEnterResumeAnim、onPreExitFinishAnim、onPreExitPauseAnim")
     override fun overridePendingTransition(enterAnim: Int, exitAnim: Int) {
         mEnterAnim = enterAnim
-        mEnterAnim = exitAnim
+        mExitAnim = exitAnim
     }
 
     override fun isFinishing(): Boolean {
@@ -389,6 +437,10 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         return mPageDocker.window
     }
 
+    fun getPageWindows():PageActivityWindows{
+        return mPageWindows
+    }
+
     override fun getWindowManager(): WindowManager {
         return mPageDocker.windowManager
     }
@@ -409,8 +461,8 @@ open class BasePageActivity(private val context:Context) : FrameLayout(context),
         return mPageDocker.getSystemService(name)
     }
 
-    private fun log(msg:String){
-        LogUtil.i("[${this::class.java.simpleName}]:$msg")
+    private fun log(function: () -> String){
+        LogUtil.i("[${this::class.java.simpleName}]:${function()}")
     }
 
     fun getScreenWidth(): Int {

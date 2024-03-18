@@ -4,7 +4,7 @@ plugins {
     id 'maven-publish'
 }
 
-ext.verName = "0.1.1-t32"
+ext.verName = "0.1.1-t40"
 ext.verCode = 1
 ext.POM_ARTIFACT_ID = 'page_activity'
 ext.uploadToOnline = true
