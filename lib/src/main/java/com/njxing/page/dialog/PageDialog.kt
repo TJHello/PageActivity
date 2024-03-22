@@ -10,6 +10,18 @@ import com.njxing.page.BasePageActivity
 import com.njxing.page.Windows
 import com.njxing.page.onEnd
 
+/**
+ * Page dialog
+ *
+ * ViewBinding用法
+ *
+ * private val mViewBinding by lazy{this.windows.getDecorView()}
+ *
+ * override fun onCreate() {
+ *  setContentView(R.layout.xxx)
+ * }
+ *
+ */
 abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:Int=0) {
 
     private var onShow : ()->Unit = {}
@@ -22,6 +34,7 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
     private var enableAnim = true
     private var cancelable = true
     private var canceledOnTouchOutside = true
+    private var canceledOnClickButton = false
 
 
     init {
@@ -72,6 +85,9 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
     protected fun listenerClick(id:Int){
         this.findViewById<View>(id)?.setOnClickListener {
             onClick(it)
+            if(canceledOnClickButton){
+                dismiss()
+            }
         }
     }
 
@@ -133,6 +149,10 @@ abstract class PageDialog(private val pageActivity : BasePageActivity,layoutId:I
 
     protected fun setCanceledOnTouchOutside(bool: Boolean){
         canceledOnTouchOutside = bool
+    }
+
+    protected fun setCanceledOnClickButton(bool: Boolean){
+        canceledOnClickButton = bool
     }
 
     protected fun <T : View> findViewById(id:Int):T?{

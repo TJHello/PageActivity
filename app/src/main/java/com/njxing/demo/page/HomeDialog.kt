@@ -9,11 +9,9 @@ class HomeDialog(mPageActivity: BasePageActivity) : PageDialog(mPageActivity) {
 
     override fun onCreate() {
         setContentView(R.layout.home_dialog_layout)
+        setCancelable(false)
+        setCanceledOnTouchOutside(false)
         listenerClick(R.id.btOk)
-    }
-
-
-    override fun dismiss() {
-        super.dismiss()
+        listenerClick(R.id.btCancel)
     }
 }
