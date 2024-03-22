@@ -21,7 +21,9 @@ class Test1PageActivity(context: Context) : PageActivity(context) {
             })
             this.finish()
         }
-        this.findViewById<TextView>(R.id.tvTitle).text = getIntent().getStringExtra("title")
+        this.findViewById<TextView>(R.id.btNewPage).setOnClickListener {
+            startActivity(Test1PageActivity::class.java)
+        }
 
     }
 

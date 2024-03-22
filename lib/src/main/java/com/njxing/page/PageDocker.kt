@@ -419,6 +419,10 @@ abstract class PageDocker : AppCompatActivity() {
                     it.id == head.id
                 }
                 onStartPageActivity(pageActivity,head,Intent(),pageActivity.getRequestCode())
+            }else{
+                if(activity!=null){
+                    onResumePageActivity(pageActivity,activity,intent,pageActivity.getRequestCode())
+                }
             }
         }
         pageHeadStack.removeAll {

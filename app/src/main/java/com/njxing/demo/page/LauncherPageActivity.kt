@@ -20,12 +20,15 @@ class LauncherPageActivity(context: Context) : PageActivity(context) {
             startActivityForResult(intent,1)
         }
         this.findViewById<Button>(R.id.btShowDialog).setOnClickListener {
-            HomeDialog(this)
-                .onShow {
+            val dialog = HomeDialog(this)
+            dialog.onShow {
                 }
                 .onDismiss {
                 }
                 .show()
+            dialog.onClick {
+                dialog.dismiss()
+            }
         }
     }
 

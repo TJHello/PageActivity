@@ -12,9 +12,6 @@ class HomeDialog(mPageActivity: BasePageActivity) : PageDialog(mPageActivity) {
         listenerClick(R.id.btOk)
     }
 
-    override fun show() {
-        super.show()
-    }
 
     override fun dismiss() {
         super.dismiss()
